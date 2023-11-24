@@ -1,0 +1,5 @@
+[deps]
+AdaptiveTestPlots = "d194c7c1-4081-4169-ba52-101f65b44e42"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+FittedItemBanks = "3f797b09-34e4-41d7-acf6-3302ae3248a5"
+LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"

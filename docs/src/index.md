@@ -10,3 +10,9 @@ CurrentModule = AdaptiveTestPlots
 
 ```@index
 ```
+
+## API
+
+```@autodocs
+Modules = [AdaptiveTestPlots]
+```

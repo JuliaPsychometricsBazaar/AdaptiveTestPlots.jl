@@ -19,8 +19,6 @@ using ComputerAdaptiveTesting: Aggregators
 using ComputerAdaptiveTesting.Aggregators
 using PsychometricsBazaarBase.Integrators
 
-include("./comparison.jl")
-
 # Allows hline! on AlgebraOfGraphics plots. May be better way in future.
 # See: https://github.com/JuliaPlots/AlgebraOfGraphics.jl/issues/299
 function aog_hlines!(fg::AlgebraOfGraphics.FigureGrid, args...; kws...)

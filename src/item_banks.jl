@@ -1,15 +1,3 @@
-"""
-This module provides plots for fitted item banks in Julia
-"""
-module FittedItemBankPlots
-
-using Makie
-using FittedItemBanks
-using FittedItemBanks: item_bank_domain, DichotomousPointsItemBank
-using DocStringExtensions
-
-export plot_item_bank, plot_item_bank_comparison
-
 struct LabelVecLabeller
     arr::Vector{String}
 end
@@ -261,6 +249,4 @@ function plot_item_bank(item_bank::DichotomousPointsItemBank;
             marker = :cross)
     end
     fig
-end
-
 end

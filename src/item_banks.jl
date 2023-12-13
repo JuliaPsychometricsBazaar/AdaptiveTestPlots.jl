@@ -210,6 +210,7 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
     end
     # Plot lines
     outcomes = Array{Union{Makie.Lines, Makie.Heatmap}}(undef, length(item_banks), 2, length(items))
+    some_heatmap = nothing
     for (ibi, item_bank) in enumerate(item_banks)
         ax = Axis(fig[ibi, 1])
         xlims!(ax, lim_lo, lim_hi)
@@ -219,7 +220,15 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
             item_label = labeller(item)
             item_lines = @view outcomes[ibi, :, ii]
             plot_item_response(ir, ax, xs, item_label, item_lines)
+            for line in item_lines
+                if isa(line, Makie.Heatmap)
+                    some_heatmap = line
+                end
+            end
         end
+    end
+    if some_heatmap !== nothing
+        Colorbar(fig[2, 2], some_heatmap)
     end
     # Draw widgets
     outcome_grid = include_outcome_toggles ? draw_outcome_toggles!(fig[1, 2], [1, 2]) :

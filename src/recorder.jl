@@ -231,14 +231,16 @@ end
 $(TYPEDSIGNATURES)
 """
 function lh_evolution_interactive(recorder; abilities = nothing)
-    conv_dist_fig = Figure()
+    conv_dist_fig = Figure(size = (1000, 700))
     ax = Axis(conv_dist_fig[1, 1])
 
-    lsgrid = SliderGrid(conv_dist_fig,
-        (label = "Respondent", range = 1:3, format = "{:d}"),
-        (label = "Time step", range = 1:99, format = "{:d}"),
+    respondents = 1:length(unique(recorder.respondents))
+    steps = 1:length(unique(recorder.steps))
+    lsgrid = SliderGrid(conv_dist_fig[1, 2][1, 1],
+        (label = "Respondent", range = respondents, format = "{:d}"),
+        (label = "Time step", range = steps, format = "{:d}"),
         width = 350,
-        tellheight = false)
+        height = 200)
 
     toggle_labels = [
         "posterior ability estimate",
@@ -248,12 +250,10 @@ function lh_evolution_interactive(recorder; abilities = nothing)
         "previous responses",
     ]
     toggles = [Toggle(conv_dist_fig, active = true) for _ in toggle_labels]
-    labels = [Label(conv_dist_fig, lift(x -> x ? "Show $l" : "Hide $l", t.active))
+    labels = [Label(conv_dist_fig, lift(x -> x ? "Hide $l" : "Show $l", t.active))
               for (t, l) in zip(toggles, toggle_labels)]
     toggle_by_name = Dict(zip(toggle_labels, toggles))
 
-    conv_dist_fig[1, 2] = GridLayout()
-    conv_dist_fig[1, 2][1, 1] = lsgrid.layout
     conv_dist_fig[1, 2][2, 1] = grid!(hcat(toggles, labels), tellheight = false)
 
     respondent = lsgrid.sliders[1].value

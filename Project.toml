@@ -1,7 +1,7 @@
 name = "AdaptiveTestPlots"
 uuid = "d194c7c1-4081-4169-ba52-101f65b44e42"
 authors = ["Frankie Robertson"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"

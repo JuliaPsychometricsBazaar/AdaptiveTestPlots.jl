@@ -13,6 +13,7 @@ mutable struct CatRecorder{AbilityVecT}
     raw_likelihoods::Matrix{Float64}
     item_responses::Matrix{Float64}
     item_difficulties::Matrix{Float64}
+    item_index::Matrix{Int}
     item_correctness::Matrix{Bool}
     ability_estimator::AbilityEstimator
     respondent_step_lookup::Dict{Tuple{Int, Int}, Int}
@@ -50,6 +51,7 @@ function CatRecorder(xs,
         zeros(points, num_values),
         zeros(points, num_values),
         zeros(num_questions, num_respondents),
+        zeros(Int, num_questions, num_respondents),
         zeros(Bool, num_questions, num_respondents),
         ability_estimator,
         Dict{Tuple{Int, Int}, Int}(),
@@ -193,6 +195,7 @@ function (recorder::CatRecorder)(tracked_responses, resp_idx, terminating)
     if hasproperty(params, :difficulty)
         recorder.item_difficulties[recorder.step, resp_idx] = params.difficulty
     end
+    recorder.item_index[recorder.step, resp_idx] = item_index
     recorder.item_correctness[recorder.step, resp_idx] = item_correct
 
     recorder.col_idx += 1

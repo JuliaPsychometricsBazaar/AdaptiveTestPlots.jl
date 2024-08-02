@@ -77,7 +77,7 @@ function plot_item_bank(item_bank::AbstractItemBank;
         labeller = index_labeller,
         zero_symmetric = false,
         include_outcome_toggles = true,
-        include_item_toggles = false,)
+        include_item_toggles = false)
     fig = Figure()
     ax = Axis(fig[1, 1])
     lim_lo, lim_hi = _item_bank_domain(DomainType(item_bank),
@@ -165,11 +165,12 @@ function make_grid(::OneDimContinuousDomain, item_bank, lim_lo, lim_hi, num_poin
     range(lim_lo, lim_hi, length = num_points)
 end
 
-function make_grid(::VectorContinuousDomain, item_bank, lim_lo::AbstractVector, lim_hi::AbstractVector, num_points)
+function make_grid(::VectorContinuousDomain, item_bank,
+        lim_lo::AbstractVector, lim_hi::AbstractVector, num_points)
     prod = Iterators.product((
         range(lo, hi, length = num_points)
-        for (lo, hi)
-        in zip(lim_lo, lim_hi)
+    for (lo, hi)
+    in zip(lim_lo, lim_hi)
     )...)
     reshape(collect.(prod), :)
 end
@@ -194,7 +195,7 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
         labeller = index_labeller,
         include_outcome_toggles = true,
         include_item_toggles = false,
-        ignore_domain_indices = [],)
+        ignore_domain_indices = [])
     fig = Figure()
     ax = Axis(fig[1, 1])
     # Get limits
@@ -209,7 +210,8 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
         lim_hi = max(lim_hi, ib_lim_hi)
     end
     # Plot lines
-    outcomes = Array{Union{Makie.Lines, Makie.Heatmap}}(undef, length(item_banks), 2, length(items))
+    outcomes = Array{Union{Makie.Lines, Makie.Heatmap}}(
+        undef, length(item_banks), 2, length(items))
     some_heatmap = nothing
     for (ibi, item_bank) in enumerate(item_banks)
         ax = Axis(fig[ibi, 1])
@@ -234,7 +236,8 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
     outcome_grid = include_outcome_toggles ? draw_outcome_toggles!(fig[1, 2], [1, 2]) :
                    nothing
     item_grid = include_item_toggles ?
-                draw_item_toggles!(fig[include_outcome_toggles ? length(item_banks) : 1, 2],
+                draw_item_toggles!(
+        fig[include_outcome_toggles ? length(item_banks) : 1, 2],
         items,
         labeller) : nothing
     # Connect widgets

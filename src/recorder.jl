@@ -158,11 +158,13 @@ function eachmatcol(xs::Vector)
     xs
 end
 
-function save_sampled(xs::Nothing, integrator, recorder::CatRecorder, tracked_responses, ir, item_correct)
+function save_sampled(
+        xs::Nothing, integrator, recorder::CatRecorder, tracked_responses, ir, item_correct)
     # Just skip saving in this case
 end
 
-function save_sampled(xs::Nothing, integrator::RiemannEnumerationIntegrator, recorder::CatRecorder, tracked_responses, ir, item_correct)
+function save_sampled(xs::Nothing, integrator::RiemannEnumerationIntegrator,
+        recorder::CatRecorder, tracked_responses, ir, item_correct)
     # In this case, the item bank is probably sampled so we can use that
 
     # Save likelihoods
@@ -170,23 +172,24 @@ function save_sampled(xs::Nothing, integrator::RiemannEnumerationIntegrator, rec
     denom = normdenom(integrator, dist_est, tracked_responses)
     recorder.likelihoods[:, recorder.col_idx] = function_ys(
         Aggregators.pdf(
-            dist_est,
-            tracked_responses
-        )
+        dist_est,
+        tracked_responses
+    )
     ) ./ denom
     raw_denom = normdenom(integrator, recorder.raw_estimator, tracked_responses)
     recorder.raw_likelihoods[:, recorder.col_idx] = function_ys(
         Aggregators.pdf(
-            recorder.raw_estimator,
-            tracked_responses
-        )
+        recorder.raw_estimator,
+        tracked_responses
+    )
     ) ./ raw_denom
 
     # Save item responses
     recorder.item_responses[:, recorder.col_idx] = item_ys(ir, item_correct)
 end
 
-function save_sampled(xs, integrator, recorder::CatRecorder, tracked_responses, ir, item_correct)
+function save_sampled(
+        xs, integrator, recorder::CatRecorder, tracked_responses, ir, item_correct)
     # Save likelihoods
     dist_est = distribution_estimator(recorder.ability_estimator)
     denom = normdenom(integrator, dist_est, tracked_responses)
@@ -194,7 +197,8 @@ function save_sampled(xs, integrator, recorder::CatRecorder, tracked_responses, 
         Ref(tracked_responses),
         eachmatcol(xs)) ./ denom
     raw_denom = normdenom(integrator, recorder.raw_estimator, tracked_responses)
-    recorder.raw_likelihoods[:, recorder.col_idx] = Aggregators.pdf.(Ref(recorder.raw_estimator),
+    recorder.raw_likelihoods[:, recorder.col_idx] = Aggregators.pdf.(
+        Ref(recorder.raw_estimator),
         Ref(tracked_responses),
         eachmatcol(xs)) ./ raw_denom
 
@@ -224,7 +228,8 @@ function (recorder::CatRecorder)(tracked_responses, resp_idx, terminating)
     item_index = tracked_responses.responses.indices[end]
     item_correct = tracked_responses.responses.values[end] > 0
     ir = ItemResponse(tracked_responses.item_bank, item_index)
-    save_sampled(recorder.xs, recorder.integrator, recorder, tracked_responses, ir, item_correct)
+    save_sampled(
+        recorder.xs, recorder.integrator, recorder, tracked_responses, ir, item_correct)
 
     # Save item parameters
     params = item_params(tracked_responses.item_bank, item_index)
@@ -286,7 +291,7 @@ function lh_evolution_interactive(recorder; abilities = nothing)
         "raw ability estimate",
         "actual ability",
         "current item response",
-        "previous responses",
+        "previous responses"
     ]
     toggles = [Toggle(conv_dist_fig, active = true) for _ in toggle_labels]
     labels = [Label(conv_dist_fig, lift(x -> x ? "Hide $l" : "Show $l", t.active))

@@ -23,6 +23,8 @@ Distributions = "0.25.76"
 DocStringExtensions = "^0.9"
 FillArrays = "1"
 FittedItemBanks = "^0.3.0, ^0.4.0, ^0.5.0, ^0.6.0"
+JET = "0.9.7"
+JuliaFormatter = "1.0.59"
 Makie = "^0.18.0, ^0.19.0, ^0.20.0, ^0.21.0"
 PsychometricsBazaarBase = "^0.6, ^0.7"
 XUnit = "^1.1.6"
@@ -30,7 +32,9 @@ julia = "^1.8"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 XUnit = "3e3c03f2-1a94-11e9-2981-050a4ca824ab"
 
 [targets]
-test = ["Aqua", "XUnit"]
+test = ["Aqua", "JET", "JuliaFormatter", "XUnit"]

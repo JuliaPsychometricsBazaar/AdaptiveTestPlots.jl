@@ -1,6 +1,3 @@
-using Makie: make_block_docstring
-
-
 # Allows hline! on AlgebraOfGraphics plots. May be better way in future.
 # See: https://github.com/JuliaPlots/AlgebraOfGraphics.jl/issues/299
 function aog_hlines!(fg::AlgebraOfGraphics.FigureGrid, args...; kws...)

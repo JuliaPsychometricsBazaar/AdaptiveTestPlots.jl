@@ -1,4 +1,4 @@
-using Makie: make_block_docstring
+using Makie: make_block_docstring  # This is used by @Block
 
 
 # Allows hline! on AlgebraOfGraphics plots. May be better way in future.

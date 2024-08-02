@@ -17,9 +17,10 @@ using Makie
 using Makie: @Block
 using DocStringExtensions
 using FittedItemBanks
-using FittedItemBanks: item_params, item_bank_domain
+using FittedItemBanks: item_params, item_bank_domain, item_ys
 using ComputerAdaptiveTesting: Aggregators
 using ComputerAdaptiveTesting.Aggregators
+using ComputerAdaptiveTesting.Responses: function_ys
 using PsychometricsBazaarBase.Integrators
 using FillArrays
 

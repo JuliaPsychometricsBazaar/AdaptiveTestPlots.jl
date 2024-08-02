@@ -6,7 +6,7 @@ mutable struct CatRecorder{AbilityVecT}
     ability_ests::AbilityVecT
     ability_divs::Vector{Float64}
     steps::Vector{Int}
-    xs::AbilityVecT
+    xs::Union{Nothing, AbilityVecT}
     likelihoods::Matrix{Float64}
     integrator::AbilityIntegrator
     raw_estimator::LikelihoodAbilityEstimator
@@ -35,7 +35,11 @@ function CatRecorder(xs,
         ability_estimator,
         actual_abilities = nothing)
     num_values = num_questions * num_respondents
-    xs_vec = collect(xs)
+    if xs === nothing
+        xs_vec = nothing
+    else
+        xs_vec = collect(xs)
+    end
 
     CatRecorder(1,
         1,
@@ -154,6 +158,52 @@ function eachmatcol(xs::Vector)
     xs
 end
 
+function save_sampled(xs::Nothing, integrator, recorder::CatRecorder, tracked_responses, ir, item_correct)
+    # Just skip saving in this case
+end
+
+function save_sampled(xs::Nothing, integrator::RiemannEnumerationIntegrator, recorder::CatRecorder, tracked_responses, ir, item_correct)
+    # In this case, the item bank is probably sampled so we can use that
+
+    # Save likelihoods
+    dist_est = distribution_estimator(recorder.ability_estimator)
+    denom = normdenom(integrator, dist_est, tracked_responses)
+    recorder.likelihoods[:, recorder.col_idx] = function_ys(
+        Aggregators.pdf(
+            dist_est,
+            tracked_responses
+        )
+    ) ./ denom
+    raw_denom = normdenom(integrator, recorder.raw_estimator, tracked_responses)
+    recorder.raw_likelihoods[:, recorder.col_idx] = function_ys(
+        Aggregators.pdf(
+            recorder.raw_estimator,
+            tracked_responses
+        )
+    ) ./ raw_denom
+
+    # Save item responses
+    recorder.item_responses[:, recorder.col_idx] = item_ys(ir, item_correct)
+end
+
+function save_sampled(xs, integrator, recorder::CatRecorder, tracked_responses, ir, item_correct)
+    # Save likelihoods
+    dist_est = distribution_estimator(recorder.ability_estimator)
+    denom = normdenom(integrator, dist_est, tracked_responses)
+    recorder.likelihoods[:, recorder.col_idx] = Aggregators.pdf.(Ref(dist_est),
+        Ref(tracked_responses),
+        eachmatcol(xs)) ./ denom
+    raw_denom = normdenom(integrator, recorder.raw_estimator, tracked_responses)
+    recorder.raw_likelihoods[:, recorder.col_idx] = Aggregators.pdf.(Ref(recorder.raw_estimator),
+        Ref(tracked_responses),
+        eachmatcol(xs)) ./ raw_denom
+
+    # Save item responses
+    recorder.item_responses[:, recorder.col_idx] = resp.(Ref(ir),
+        item_correct,
+        eachmatcol(xs))
+end
+
 """
 $(TYPEDSIGNATURES)
 """
@@ -171,24 +221,10 @@ function (recorder::CatRecorder)(tracked_responses, resp_idx, terminating)
     end
     recorder.steps[recorder.col_idx] = recorder.step
 
-    # Save likelihoods
-    dist_est = distribution_estimator(recorder.ability_estimator)
-    denom = normdenom(recorder.integrator, dist_est, tracked_responses)
-    recorder.likelihoods[:, recorder.col_idx] = Aggregators.pdf.(Ref(dist_est),
-        Ref(tracked_responses),
-        eachmatcol(recorder.xs)) ./ denom
-    raw_denom = normdenom(recorder.integrator, recorder.raw_estimator, tracked_responses)
-    recorder.raw_likelihoods[:, recorder.col_idx] = Aggregators.pdf.(Ref(recorder.raw_estimator),
-        Ref(tracked_responses),
-        eachmatcol(recorder.xs)) ./ raw_denom
-
-    # Save item responses
     item_index = tracked_responses.responses.indices[end]
     item_correct = tracked_responses.responses.values[end] > 0
     ir = ItemResponse(tracked_responses.item_bank, item_index)
-    recorder.item_responses[:, recorder.col_idx] = resp.(Ref(ir),
-        item_correct,
-        eachmatcol(recorder.xs))
+    save_sampled(recorder.xs, recorder.integrator, recorder, tracked_responses, ir, item_correct)
 
     # Save item parameters
     params = item_params(tracked_responses.item_bank, item_index)

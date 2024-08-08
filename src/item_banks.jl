@@ -41,8 +41,7 @@ function draw_outcome_toggles!(ax, outcomes)
     end
     LabelledToggleGrid(ax,
         outcome_toggles...,
-        width = 350,
-        tellheight = false)
+        width = 100)
 end
 
 function draw_item_toggles!(ax, items, labeller)
@@ -58,28 +57,12 @@ function draw_item_toggles!(ax, items, labeller)
         tellheight = false)
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Plot an item bank `item_bank` with items `items` using the labeller `labeller`
-to label the items.
-
-Lines are drawn for each item and each outcome. The domain of the item bank is
-used to determine the x-axis limits. You can use `zero_symmetric` to
-force the domain to be symmetric about zero.
-
-If `include_outcome_toggles` is true, then a toggle grid is drawn to show/hide
-the outcomes. If `include_item_toggles` is true, then a toggle grid is drawn to
-show/hide the items.
-"""
-function plot_item_bank(item_bank::AbstractItemBank;
-        items = eachindex(item_bank),
-        labeller = index_labeller,
-        zero_symmetric = false,
-        include_outcome_toggles = true,
-        include_item_toggles = false)
-    fig = Figure()
-    ax = Axis(fig[1, 1])
+function plot_item_responses(
+    item_bank;
+    ax=Axis(),
+    items = eachindex(item_bank),
+    zero_symmetric = false
+)
     lim_lo, lim_hi = _item_bank_domain(DomainType(item_bank),
         item_bank,
         items;
@@ -101,18 +84,73 @@ function plot_item_bank(item_bank::AbstractItemBank;
                 label = "Item $item Outcome $out")
         end
     end
-    outcome_grid = include_outcome_toggles ? draw_outcome_toggles!(fig[1, 2], [1, 2]) :
+    return outcomes
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Plot an item bank `item_bank` with items `items` using the labeller `labeller`
+to label the items.
+
+Lines are drawn for each item and each outcome. The domain of the item bank is
+used to determine the x-axis limits. You can use `zero_symmetric` to
+force the domain to be symmetric about zero.
+
+If `include_outcome_toggles` is true, then a toggle grid is drawn to show/hide
+the outcomes. If `include_item_toggles` is true, then a toggle grid is drawn to
+show/hide the items.
+"""
+function plot_item_bank(item_bank::AbstractItemBank;
+        fig = Figure(),
+        items = eachindex(item_bank),
+        labeller = index_labeller,
+        zero_symmetric = false,
+        include_outcome_toggles = true,
+        item_selection = nothing,
+        include_legend = true)
+    # Left panel
+    left_panel = fig[1, 1] = GridLayout()
+    ax = Axis(left_panel[1, 1])
+    #  height=800
+    rowsize!(fig.layout, 1, Auto(false))
+    colsize!(fig.layout, 1, Auto(false))
+    outcomes = plot_item_responses(item_bank, ax = ax, items = items, zero_symmetric = zero_symmetric)
+    if include_legend
+        left_panel[2, 1] = Legend(fig, ax, "Legend", framevisible = false)
+    end
+
+    # Right panel
+    right_panel = fig[1, 2] = GridLayout()
+    outcome_grid = include_outcome_toggles ? draw_outcome_toggles!(right_panel[1, 1], [1, 2]) :
                    nothing
-    item_grid = include_item_toggles ?
-                draw_item_toggles!(fig[include_outcome_toggles ? 2 : 1, 2],
-        items,
-        labeller) : nothing
-    for (i, outcome_toggle) in enumerate(toggle_grid_observables(outcome_grid, 2))
-        for (j, item_toggle) in enumerate(toggle_grid_observables(item_grid, length(items)))
-            connect!(outcomes[i, j].visible, @lift $(outcome_toggle) && $(item_toggle))
+    item_grid = nothing
+    #item_selection_row = include_outcome_toggles ? 2 : 1
+    if item_selection == :toggles
+        item_grid = draw_item_toggles!(right_panel[2, 1], items, labeller)
+        for (i, outcome_toggle) in enumerate(toggle_grid_observables(outcome_grid, 2))
+            for (j, item_toggle) in enumerate(toggle_grid_observables(item_grid, length(items)))
+                connect!(outcomes[i, j].visible, @lift $(outcome_toggle) && $(item_toggle))
+            end
+        end
+    elseif item_selection in (:menu, :menu_with_all)
+        display_all_toggle = false
+        if item_selection == :menu_with_all
+            display_all_panel = right_panel[3, 1] = GridLayout()
+            display_all_toggle = Toggle(display_all_panel[1, 2], active = false)
+            Label(display_all_panel[1, 1], "Show all items")
+        end
+        menu = Menu(right_panel[2, 1], options = items, width=100)
+        for (i, outcome_toggle) in enumerate(toggle_grid_observables(outcome_grid, 2))
+            for (j, item) in enumerate(items)
+                connect!(
+                    outcomes[i, j].visible,
+                    @lift $(outcome_toggle) && ($(display_all_toggle.active) || $(menu.selection) == item)
+                )
+            end
         end
     end
-    fig[2, 1] = Legend(fig, ax, "Legend", framevisible = false)
+    trim!(right_panel)
     fig
 end
 

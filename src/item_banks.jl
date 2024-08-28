@@ -58,10 +58,10 @@ function draw_item_toggles!(ax, items, labeller)
 end
 
 function plot_item_responses(
-    item_bank;
-    ax=Axis(),
-    items = eachindex(item_bank),
-    zero_symmetric = false
+        item_bank;
+        ax = Axis(),
+        items = eachindex(item_bank),
+        zero_symmetric = false
 )
     lim_lo, lim_hi = _item_bank_domain(DomainType(item_bank),
         item_bank,
@@ -119,7 +119,8 @@ function plot_item_bank(item_bank::AbstractItemBank;
     ax = Axis(left_panel[1, 1])
     rowsize!(fig.layout, 1, Auto(false))
     colsize!(fig.layout, 1, Auto(false))
-    outcomes = plot_item_responses(item_bank, ax = ax, items = items, zero_symmetric = zero_symmetric)
+    outcomes = plot_item_responses(
+        item_bank, ax = ax, items = items, zero_symmetric = zero_symmetric)
     if include_legend
         left_panel[2, 1] = Legend(fig, ax, "Legend", framevisible = false)
     end
@@ -142,7 +143,7 @@ function plot_item_bank(item_bank::AbstractItemBank;
             display_all_obs = display_all_toggle.active
             Label(display_all_panel[1, 1], "Show all items")
         end
-        menu = Menu(right_panel[2, 1], options = items, width=100)
+        menu = Menu(right_panel[2, 1], options = items, width = 100)
         item_show_obs_arr[i] = [@lift $(menu.selection) == item for item in items]
     end
     trim!(right_panel)

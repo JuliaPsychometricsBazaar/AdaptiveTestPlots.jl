@@ -98,8 +98,8 @@ used to determine the x-axis limits. You can use `zero_symmetric` to
 force the domain to be symmetric about zero.
 
 If `include_outcome_toggles` is true, then a toggle grid is drawn to show/hide
-the outcomes. If `include_item_toggles` is true, then a toggle grid is drawn to
-show/hide the items.
+the outcomes. If `item_selection` is :toggles, then a toggle grid is drawn to
+show/hide the items, for :menu a menu is used allowing a single item to be choseshowenn.
 """
 function plot_item_bank(item_bank::AbstractItemBank;
         fig = Figure(),
@@ -109,10 +109,14 @@ function plot_item_bank(item_bank::AbstractItemBank;
         include_outcome_toggles = true,
         item_selection = nothing,
         include_legend = true)
+    # Default value of observables
+    display_all_obs = false
+    outcome_show_obs_arr = Fill(true, 2)
+    item_show_obs_arr = Fill(true, length(items))
+
     # Left panel
     left_panel = fig[1, 1] = GridLayout()
     ax = Axis(left_panel[1, 1])
-    #  height=800
     rowsize!(fig.layout, 1, Auto(false))
     colsize!(fig.layout, 1, Auto(false))
     outcomes = plot_item_responses(item_bank, ax = ax, items = items, zero_symmetric = zero_symmetric)
@@ -122,35 +126,36 @@ function plot_item_bank(item_bank::AbstractItemBank;
 
     # Right panel
     right_panel = fig[1, 2] = GridLayout()
-    outcome_grid = include_outcome_toggles ? draw_outcome_toggles!(right_panel[1, 1], [1, 2]) :
-                   nothing
+    if include_outcome_toggles
+        outcome_grid = draw_outcome_toggles!(right_panel[1, 1], [1, 2])
+        outcome_show_obs_arr = [toggle.active for toggle in outcome_grid.toggles]
+    end
     item_grid = nothing
-    #item_selection_row = include_outcome_toggles ? 2 : 1
+
     if item_selection == :toggles
         item_grid = draw_item_toggles!(right_panel[2, 1], items, labeller)
-        for (i, outcome_toggle) in enumerate(toggle_grid_observables(outcome_grid, 2))
-            for (j, item_toggle) in enumerate(toggle_grid_observables(item_grid, length(items)))
-                connect!(outcomes[i, j].visible, @lift $(outcome_toggle) && $(item_toggle))
-            end
-        end
+        item_show_obs_arr = [toggle.active for toggle in grid.toggles]
     elseif item_selection in (:menu, :menu_with_all)
-        display_all_toggle = false
         if item_selection == :menu_with_all
             display_all_panel = right_panel[3, 1] = GridLayout()
             display_all_toggle = Toggle(display_all_panel[1, 2], active = false)
+            display_all_obs = display_all_toggle.active
             Label(display_all_panel[1, 1], "Show all items")
         end
         menu = Menu(right_panel[2, 1], options = items, width=100)
-        for (i, outcome_toggle) in enumerate(toggle_grid_observables(outcome_grid, 2))
-            for (j, item) in enumerate(items)
-                connect!(
-                    outcomes[i, j].visible,
-                    @lift $(outcome_toggle) && ($(display_all_toggle.active) || $(menu.selection) == item)
-                )
-            end
-        end
+        item_show_obs_arr[i] = [@lift $(menu.selection) == item for item in items]
     end
     trim!(right_panel)
+
+    # Hook up the observables
+    for (i, outcome) in enumerate(outcome_show_obs_arr)
+        for (j, item) in enumerate(item_show_obs_arr)
+            connect!(
+                outcomes[i, j].visible,
+                @lift $(outcome) && ($(item) || $(display_all_obs))
+            )
+        end
+    end
     fig
 end
 

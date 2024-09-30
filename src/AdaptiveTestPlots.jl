@@ -27,5 +27,6 @@ using FillArrays
 include("./makie_extensions.jl")
 include("./item_banks.jl")
 include("./recorder.jl")
+include("./precompile.jl")
 
 end

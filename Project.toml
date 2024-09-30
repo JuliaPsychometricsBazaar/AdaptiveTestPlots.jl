@@ -12,6 +12,7 @@ DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 FittedItemBanks = "3f797b09-34e4-41d7-acf6-3302ae3248a5"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 PsychometricsBazaarBase = "b0d9cada-d963-45e9-a4c6-4746243987f1"
 
 [compat]

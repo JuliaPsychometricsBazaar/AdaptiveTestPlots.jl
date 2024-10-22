@@ -30,7 +30,7 @@ JuliaFormatter = "1.0.59"
 Makie = "^0.18.0, ^0.19.0, ^0.20.0, ^0.21.0"
 PsychometricsBazaarBase = "^0.6, ^0.7"
 XUnit = "^1.1.6"
-julia = "^1.8"
+julia = "^1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"

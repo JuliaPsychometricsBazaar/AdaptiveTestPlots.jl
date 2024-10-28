@@ -32,6 +32,8 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/julia-downgrade-compat@v1
         if: ${{ matrix.version == '1.10' }}
+        with:
+          skip: Random
       - uses: julia-actions/cache@v1
       - name: Run tests
         run: |

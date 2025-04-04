@@ -1,4 +1,5 @@
 function draw_likelihood(ax,
+        ::OneDimContinuousDomain,
         dist_est::DistributionAbilityEstimator,
         tracked_responses,
         integrator,
@@ -9,6 +10,7 @@ function draw_likelihood(ax,
 end
 
 function draw_likelihood(ax,
+        ::OneDimContinuousDomain,
         point_est::PointAbilityEstimator,
         tracked_responses,
         integrator_,
@@ -17,11 +19,14 @@ function draw_likelihood(ax,
     vlines([θ_estimate]).plot.plots[1]
 end
 
-function draw_likelihood(ax, dist::Distribution, _tracked_responses, integrator_, xs)
+function draw_likelihood(ax,
+        ::OneDimContinuousDomain,
+        dist::Distribution, _tracked_responses, integrator_, xs)
     lines!(ax, xs, pdf.(dist, xs))
 end
 
 function draw_likelihood(ax,
+        ::OneDimContinuousDomain,
         grid_tracker::ClosedFormNormalAbilityTracker,
         tracked_responses,
         integrator,
@@ -30,6 +35,7 @@ function draw_likelihood(ax,
     grid_tracker.cur_ability.mean,
     grid_tracker.cur_ability.var
     draw_likelihood(ax,
+        OneDimContinuousDomain(),
         Normal(grid_tracker.cur_ability.mean, sqrt(grid_tracker.cur_ability.var)),
         tracked_responses,
         integrator,
@@ -37,11 +43,30 @@ function draw_likelihood(ax,
 end
 
 function draw_likelihood(ax,
+        ::OneDimContinuousDomain,
         grid_tracker::GriddedAbilityTracker,
         tracked_responses,
         integrator_,
         xs)
     lines!(ax, grid_tracker.grid, grid_tracker.cur_ability)
+end
+
+function draw_likelihood(ax,
+        ::VectorContinuousDomain,
+        dist_est::DistributionAbilityEstimator,
+        tracked_responses,
+        integrator,
+        xs)
+    denom = normdenom(integrator, dist_est, tracked_responses)
+    ys = Aggregators.pdf.(Ref(dist_est), Ref(tracked_responses), xs) ./ denom
+
+    dim1 = [x[1] for x in xs]
+    dim2 = [x[2] for x in xs]
+    heatmap!(ax,
+        dim1,
+        dim2,
+        ys,
+        label = "Outcome")
 end
 
 """
@@ -52,14 +77,20 @@ function plot_likelihoods(estimators,
         integrator,
         xs,
         lim_lo = -6.0,
-        lim_hi = 6.0)
-    fig = Figure()
+        lim_hi = 6.0;
+        fig = Figure())
     ax = Axis(fig[1, 1])
-    xlims!(lim_lo, lim_hi)
+    rowsize!(fig.layout, 1, Auto(false))
+    colsize!(fig.layout, 1, Auto(false))
+    domain_type = DomainType(tracked_responses.item_bank)
+    if domain_type isa OneDimContinuousDomain
+        xlims!(lim_lo, lim_hi)
+    end
     est_plots = []
     toggles = []
     for (name, estimator) in estimators
-        est_plot = draw_likelihood(ax, estimator, tracked_responses, integrator, xs)
+        est_plot = draw_likelihood(
+            ax, domain_type, estimator, tracked_responses, integrator, xs)
         push!(toggles, (off_label = "Show $name", on_label = "Hide $name", active = true))
         push!(est_plots, est_plot)
     end

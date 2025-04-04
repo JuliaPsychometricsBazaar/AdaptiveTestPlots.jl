@@ -10,21 +10,6 @@ function index_labeller(index::Int)
     "Item $index"
 end
 
-function _item_bank_domain(::OneDimContinuousDomain,
-        item_bank,
-        items;
-        zero_symmetric = false)
-    item_bank_domain(item_bank; items = items, zero_symmetric = zero_symmetric)
-end
-
-function _item_bank_domain(::VectorContinuousDomain,
-        item_bank,
-        items;
-        zero_symmetric = false)
-    nd = domdims(item_bank)
-    item_bank_domain(item_bank; items = items, zero_symmetric = zero_symmetric)
-end
-
 function toggle_grid_observables(grid, len; default = true)
     if grid === nothing
         fill(Observable(default), len)
@@ -57,13 +42,14 @@ function draw_item_toggles!(ax, items, labeller)
         tellheight = false)
 end
 
+#=
 function plot_item_responses(
         item_bank;
         ax = Axis(),
         items = eachindex(item_bank),
         zero_symmetric = false
 )
-    lim_lo, lim_hi = _item_bank_domain(DomainType(item_bank),
+    lim_lo, lim_hi = item_bank_domain(
         item_bank,
         items;
         zero_symmetric = zero_symmetric)
@@ -84,6 +70,30 @@ function plot_item_responses(
                 label = "Item $item Outcome $out")
         end
     end
+    return outcomes
+end
+=#
+
+function plot_item_responses(
+        item_bank;
+        ax = Axis(),
+        items = eachindex(item_bank),
+        zero_symmetric = false
+)
+    lim_lo, lim_hi = item_bank_domain(
+        item_bank;
+        items = items,
+        zero_symmetric = zero_symmetric)
+    xs = make_grid(item_bank, lim_lo, lim_hi, 100)
+    outcomes = Array{Union{Makie.Lines, Makie.Heatmap}}(undef, 2, length(items))
+
+    for (ii, item) in enumerate(items)
+        ir = ItemResponse(item_bank, item)
+        item_label = "Item $item"
+        item_outcomes = @view outcomes[:, ii]
+        plot_item_response(ir, ax, xs, item_label, item_outcomes)
+    end
+
     return outcomes
 end
 
@@ -116,6 +126,11 @@ function plot_item_bank(item_bank::AbstractItemBank;
 
     # Left panel
     left_panel = fig[1, 1] = GridLayout()
+    lim_lo, lim_hi = item_bank_domain(
+        item_bank;
+        items = items,
+        zero_symmetric = zero_symmetric)
+    #ax = Axis(left_panel[1, 1], limits = ((lim_lo, lim_hi), nothing))
     ax = Axis(left_panel[1, 1])
     rowsize!(fig.layout, 1, Auto(false))
     colsize!(fig.layout, 1, Auto(false))
@@ -249,7 +264,7 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
         if idx in ignore_domain_indices
             continue
         end
-        ib_lim_lo, ib_lim_hi = _item_bank_domain(DomainType(item_bank), item_bank, items)
+        ib_lim_lo, ib_lim_hi = item_bank_domain(item_bank; items = items)
         lim_lo = min(lim_lo, ib_lim_lo)
         lim_hi = max(lim_hi, ib_lim_hi)
     end

@@ -1,3 +1,13 @@
-using XUnit
+using Test
 
-runtests("tests_top.jl", ARGS...)
+@testset "aqua" begin
+    include("./aqua.jl")
+end
+
+@testset "jet" begin
+    include("./jet.jl")
+end
+
+@testset "format" begin
+    include("./format.jl")
+end

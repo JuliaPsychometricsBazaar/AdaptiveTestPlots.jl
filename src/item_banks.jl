@@ -255,7 +255,8 @@ $(TYPEDSIGNATURES)
 Plot a comparison of multiple item banks `item_banks`. For an explanation of
 the options, see: `plot_item_bank`.
 """
-function plot_item_bank_comparison(item_banks::AbstractVector;
+function plot_item_bank_comparison(
+    item_banks::AbstractVector;
     items = eachindex(item_bank),
     labeller = index_labeller,
     include_outcome_toggles = true,
@@ -265,8 +266,6 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
     grid_points = 100,
     plot_item_response_cb = default_plot_item_response_cb
 )
-    fig = Figure()
-    ax = Axis(fig[1, 1])
     # Get limits
     if lims !== nothing
         lim_lo, lim_hi = lims
@@ -282,12 +281,24 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
             lim_hi = max(lim_hi, ib_lim_hi)
         end
     end
+
+    # Left panel
+    fig = Figure()
+    left_panel = fig[1, 1] = GridLayout()
+
     # Plot lines
     outcomes = Array{Union{Makie.Lines, Makie.Heatmap}}(
         undef, length(item_banks), 2, length(items))
     some_heatmap = nothing
     for (ibi, item_bank) in enumerate(item_banks)
-        ax = Axis(fig[ibi, 1])
+        local maybe_title
+        if item_bank isa Tuple
+            maybe_title = (; title=item_bank[1])
+            item_bank = item_bank[2]
+        else
+            maybe_title = (;)
+        end
+        ax = Axis(left_panel[ibi, 1]; maybe_title...)
         xlims!(ax, lim_lo, lim_hi)
         for (ii, item) in enumerate(items)
             item_label = labeller(item)
@@ -303,14 +314,19 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
     if some_heatmap !== nothing
         Colorbar(fig[2, 2], some_heatmap)
     end
+
+    # Right panel
+    right_panel = fig[1, 2] = GridLayout()
+
     # Draw widgets
-    outcome_grid = include_outcome_toggles ? draw_outcome_toggles!(fig[1, 2], [1, 2]) :
+    outcome_grid = include_outcome_toggles ? draw_outcome_toggles!(right_panel[1, 2], [1, 2]) :
                    nothing
     item_grid = include_item_toggles ?
                 draw_item_toggles!(
-        fig[include_outcome_toggles ? length(item_banks) : 1, 2],
+        right_panel[include_outcome_toggles ? length(item_banks) : 1, 2],
         items,
         labeller) : nothing
+
     # Connect widgets
     for (i, outcome_toggle) in enumerate(toggle_grid_observables(outcome_grid, 2))
         for (j, item_toggle) in enumerate(toggle_grid_observables(item_grid, items))

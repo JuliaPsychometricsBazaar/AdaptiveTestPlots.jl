@@ -26,6 +26,7 @@ using FillArrays
 
 include("./makie_extensions.jl")
 include("./item_banks.jl")
+include("./stateful.jl")
 include("./likelihoods.jl")
 include("./recorder.jl")
 include("./precompile.jl")

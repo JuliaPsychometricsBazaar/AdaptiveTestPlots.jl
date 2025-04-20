@@ -243,6 +243,12 @@ function make_grid(item_bank, lim_lo, lim_hi, num_points)
     make_grid(DomainType(item_bank), item_bank, lim_lo, lim_hi, num_points)
 end
 
+function default_plot_item_response_cb(ax, item_bank, item, lim_lo, lim_hi, grid_points, item_label, item_lines)
+    ir = ItemResponse(item_bank, item)
+    xs = make_grid(item_bank, lim_lo, lim_hi, grid_points)
+    plot_item_response(ir, ax, xs, item_label, item_lines)
+end
+
 """
 $(TYPEDSIGNATURES)
 
@@ -250,23 +256,31 @@ Plot a comparison of multiple item banks `item_banks`. For an explanation of
 the options, see: `plot_item_bank`.
 """
 function plot_item_bank_comparison(item_banks::AbstractVector;
-        items = eachindex(item_bank),
-        labeller = index_labeller,
-        include_outcome_toggles = true,
-        include_item_toggles = false,
-        ignore_domain_indices = [])
+    items = eachindex(item_bank),
+    labeller = index_labeller,
+    include_outcome_toggles = true,
+    include_item_toggles = false,
+    ignore_domain_indices = [],
+    lims = nothing,
+    grid_points = 100,
+    plot_item_response_cb = default_plot_item_response_cb
+)
     fig = Figure()
     ax = Axis(fig[1, 1])
     # Get limits
-    lim_lo = Inf
-    lim_hi = -Inf
-    for (idx, item_bank) in enumerate(item_banks)
-        if idx in ignore_domain_indices
-            continue
+    if lims !== nothing
+        lim_lo, lim_hi = lims
+    else
+        lim_lo = Inf
+        lim_hi = -Inf
+        for (idx, item_bank) in enumerate(item_banks)
+            if idx in ignore_domain_indices
+                continue
+            end
+            ib_lim_lo, ib_lim_hi = item_bank_domain(item_bank; items = items)
+            lim_lo = min(lim_lo, ib_lim_lo)
+            lim_hi = max(lim_hi, ib_lim_hi)
         end
-        ib_lim_lo, ib_lim_hi = item_bank_domain(item_bank; items = items)
-        lim_lo = min(lim_lo, ib_lim_lo)
-        lim_hi = max(lim_hi, ib_lim_hi)
     end
     # Plot lines
     outcomes = Array{Union{Makie.Lines, Makie.Heatmap}}(
@@ -276,11 +290,9 @@ function plot_item_bank_comparison(item_banks::AbstractVector;
         ax = Axis(fig[ibi, 1])
         xlims!(ax, lim_lo, lim_hi)
         for (ii, item) in enumerate(items)
-            ir = ItemResponse(item_bank, item)
-            xs = make_grid(ir.item_bank, lim_lo, lim_hi, 100)
             item_label = labeller(item)
             item_lines = @view outcomes[ibi, :, ii]
-            plot_item_response(ir, ax, xs, item_label, item_lines)
+            plot_item_response_cb(ax, item_bank, item, lim_lo, lim_hi, grid_points, item_label, item_lines)
             for line in item_lines
                 if isa(line, Makie.Heatmap)
                     some_heatmap = line

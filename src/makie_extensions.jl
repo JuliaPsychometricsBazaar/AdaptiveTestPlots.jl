@@ -96,6 +96,12 @@ macro automakie()
             using CairoMakie
         elseif (isdefined(Main, :IJulia) && Main.IJulia.inited)
             using WGLMakie
+        elseif isdefined(Main, :WGLMakie)
+            const WGLMakie = Main.WGLMakie
+        elseif isdefined(Main, :GLMakie)
+            const GLMakie = Main.GLMakie
+        elseif isdefined(Main, :CairoMakie)
+            const CairoMakie = Main.CairoMakie
         else
             Pkg = Base.require(Base.PkgId(Base.UUID(0x44cfe95a1eb252eab672e2afdf69b78f),
                 "Pkg"))

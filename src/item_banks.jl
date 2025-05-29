@@ -264,7 +264,8 @@ function plot_item_bank_comparison(
     ignore_domain_indices = [],
     lims = nothing,
     grid_points = 100,
-    plot_item_response_cb = default_plot_item_response_cb
+    plot_item_response_cb = default_plot_item_response_cb,
+    size = (800, 600),
 )
     # Get limits
     if lims !== nothing
@@ -283,7 +284,7 @@ function plot_item_bank_comparison(
     end
 
     # Left panel
-    fig = Figure()
+    fig = Figure(size=size)
     left_panel = fig[1, 1] = GridLayout()
 
     # Plot lines

@@ -1,4 +1,4 @@
-mutable struct CatRecorder{AbilityVecT}
+Base.@kwdef mutable struct CatRecording{AbilityVecT}
     col_idx::Int
     step::Int
     points::Int
@@ -8,31 +8,35 @@ mutable struct CatRecorder{AbilityVecT}
     steps::Vector{Int}
     xs::Union{Nothing, AbilityVecT}
     likelihoods::Matrix{Float64}
-    integrator::AbilityIntegrator
-    raw_estimator::LikelihoodAbilityEstimator
     raw_likelihoods::Matrix{Float64}
     item_responses::Matrix{Float64}
     item_difficulties::Matrix{Float64}
     item_index::Matrix{Int}
     item_correctness::Matrix{Bool}
-    ability_estimator::AbilityEstimator
     respondent_step_lookup::Dict{Tuple{Int, Int}, Int}
     actual_abilities::Union{Nothing, AbilityVecT}
 end
 
-#xs = range(-2.5, 2.5, length=points)
+Base.@kwdef struct CatRecorder{AbilityVecT}
+    recording::CatRecording{AbilityVecT}
+    integrator::AbilityIntegrator
+    raw_estimator::LikelihoodAbilityEstimator
+    ability_estimator::AbilityEstimator
+end
 
-"""
-$(TYPEDSIGNATURES)
-"""
-function CatRecorder(xs,
+#=
+    integrator::AbilityIntegrator
+    raw_estimator::LikelihoodAbilityEstimator
+    ability_estimator::AbilityEstimator
+=#
+
+
+function CatRecording(
+        xs,
         points,
         ability_ests,
         num_questions,
         num_respondents,
-        integrator,
-        raw_estimator,
-        ability_estimator,
         actual_abilities = nothing)
     num_values = num_questions * num_respondents
     if xs === nothing
@@ -50,29 +54,94 @@ function CatRecorder(xs,
         zeros(Int, num_values),
         xs_vec,
         zeros(points, num_values),
-        AbilityIntegrator(integrator),
-        raw_estimator,
         zeros(points, num_values),
         zeros(points, num_values),
         zeros(num_questions, num_respondents),
         zeros(Int, num_questions, num_respondents),
         zeros(Bool, num_questions, num_respondents),
-        ability_estimator,
         Dict{Tuple{Int, Int}, Int}(),
         actual_abilities)
 end
 
-function CatRecorder(xs::AbstractVector{Float64},
-        responses,
+function adjust_step!(recording::CatRecording, resp_idx)
+    if recording.col_idx > 1 && recording.respondents[recording.col_idx - 1] != resp_idx
+        recording.step = 1
+    end
+end
+
+function record!(recording::CatRecording, responses, resp_idx, ability_est)
+    adjust_step!(recording, resp_idx)
+    #ability_est = recorder.ability_estimator(tracked_responses)
+    #ir = ItemResponse(tracked_responses.item_bank, item_index)
+    #save_sampled(
+        #recorder.xs, recorder.integrator, recorder, tracked_responses, ir, item_correct)
+
+    # Save item parameters
+    #params = item_params(tracked_responses.item_bank, item_index)
+    #if hasproperty(params, :difficulty)
+        #recorder.item_difficulties[recorder.step, resp_idx] = params.difficulty
+    #end
+
+    recording.respondent_step_lookup[(resp_idx, recording.step)] = recording.col_idx
+    recording.respondents[recording.col_idx] = resp_idx
+    push_ability_est!(recording.ability_ests, recording.col_idx, ability_est)
+    if recording.actual_abilities !== nothing
+        recording.ability_divs[recording.col_idx] = sum(abs.(ability_est .-
+                                                           recording.actual_abilities[resp_idx]))
+    end
+    recording.steps[recording.col_idx] = recording.step
+
+    item_index = responses.indices[end]
+    item_correct = responses.values[end] > 0
+    recording.item_index[recording.step, resp_idx] = item_index
+    recording.item_correctness[recording.step, resp_idx] = item_correct
+
+    recording.col_idx += 1
+    recording.step += 1
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function CatRecorder(
+        xs,
+        points,
+        ability_ests,
+        num_questions,
+        num_respondents,
         integrator,
         raw_estimator,
         ability_estimator,
         actual_abilities = nothing)
+    CatRecorder(
+        CatRecording(
+            xs,
+            points,
+            ability_ests,
+            num_questions,
+            num_respondents,
+            actual_abilities
+        ),
+        AbilityIntegrator(integrator),
+        raw_estimator,
+        ability_estimator,
+    )
+end
+
+function CatRecorder(
+        xs::AbstractVector{Float64},
+        responses,
+        integrator,
+        raw_estimator,
+        ability_estimator,
+        actual_abilities = nothing
+    )
     points = size(xs, 1)
     num_questions = size(responses, 1)
     num_respondents = size(responses, 2)
     num_values = num_questions * num_respondents
-    CatRecorder(xs,
+    CatRecorder(
+        xs,
         points,
         zeros(num_values),
         num_questions,
@@ -83,12 +152,14 @@ function CatRecorder(xs::AbstractVector{Float64},
         actual_abilities)
 end
 
-function CatRecorder(xs::AbstractMatrix{Float64},
+function CatRecorder(
+        xs::AbstractMatrix{Float64},
         responses,
         integrator,
         raw_estimator,
         ability_estimator,
-        actual_abilities = nothing)
+        actual_abilities = nothing
+    )
     dims = size(xs, 1)
     points = size(xs, 2)
     num_questions = size(responses, 1)
@@ -105,12 +176,14 @@ function CatRecorder(xs::AbstractMatrix{Float64},
         actual_abilities)
 end
 
-function CatRecorder(xs::AbstractVector{Float64},
+function CatRecorder(
+        xs::AbstractVector{Float64},
         max_responses::Int,
         integrator,
         raw_estimator,
         ability_estimator,
-        actual_abilities = nothing)
+        actual_abilities = nothing
+    )
     points = size(xs, 1)
     CatRecorder(xs,
         points,
@@ -123,12 +196,14 @@ function CatRecorder(xs::AbstractVector{Float64},
         actual_abilities)
 end
 
-function CatRecorder(xs::AbstractMatrix{Float64},
+function CatRecorder(
+        xs::AbstractMatrix{Float64},
         max_responses::Int,
         integrator,
         raw_estimator,
         ability_estimator,
-        actual_abilities = nothing)
+        actual_abilities = nothing
+    )
     dims = size(xs, 1)
     points = size(xs, 2)
     CatRecorder(xs,
@@ -212,35 +287,20 @@ end
 $(TYPEDSIGNATURES)
 """
 function (recorder::CatRecorder)(tracked_responses, resp_idx, terminating)
-    ability_est = recorder.ability_estimator(tracked_responses)
-    if recorder.col_idx > 1 && recorder.respondents[recorder.col_idx - 1] != resp_idx
-        recorder.step = 1
-    end
-    recorder.respondent_step_lookup[(resp_idx, recorder.step)] = recorder.col_idx
-    recorder.respondents[recorder.col_idx] = resp_idx
-    push_ability_est!(recorder.ability_ests, recorder.col_idx, ability_est)
-    if recorder.actual_abilities !== nothing
-        recorder.ability_divs[recorder.col_idx] = sum(abs.(ability_est .-
-                                                           recorder.actual_abilities[resp_idx]))
-    end
-    recorder.steps[recorder.col_idx] = recorder.step
-
+    adjust_step!(recorder.recording, resp_idx)
     item_index = tracked_responses.responses.indices[end]
     item_correct = tracked_responses.responses.values[end] > 0
+    ability_est = recorder.ability_estimator(tracked_responses)
     ir = ItemResponse(tracked_responses.item_bank, item_index)
     save_sampled(
-        recorder.xs, recorder.integrator, recorder, tracked_responses, ir, item_correct)
-
+        recorder.recording.xs, recorder.integrator, recorder, tracked_responses, ir, item_correct)
     # Save item parameters
     params = item_params(tracked_responses.item_bank, item_index)
     if hasproperty(params, :difficulty)
-        recorder.item_difficulties[recorder.step, resp_idx] = params.difficulty
+        recorder.recording.item_difficulties[recorder.recording.step, resp_idx] = params.difficulty
     end
-    recorder.item_index[recorder.step, resp_idx] = item_index
-    recorder.item_correctness[recorder.step, resp_idx] = item_correct
 
-    recorder.col_idx += 1
-    recorder.step += 1
+    record!(recorder.recording, tracked_responses.responses, resp_idx, ability_est)
 end
 
 """
@@ -274,12 +334,12 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function lh_evolution_interactive(recorder; abilities = nothing)
+function lh_evolution_interactive(recording; abilities = nothing)
     conv_dist_fig = Figure(size = (1000, 700))
     ax = Axis(conv_dist_fig[1, 1])
 
-    respondents = 1:length(unique(recorder.respondents))
-    steps = 1:length(unique(recorder.steps))
+    respondents = 1:length(unique(recording.respondents))
+    steps = 1:length(unique(recording.steps))
     lsgrid = SliderGrid(conv_dist_fig[1, 2][1, 1],
         (label = "Respondent", range = respondents, format = "{:d}"),
         (label = "Time step", range = steps, format = "{:d}"),
@@ -303,26 +363,26 @@ function lh_evolution_interactive(recorder; abilities = nothing)
     respondent = lsgrid.sliders[1].value
     time_step = lsgrid.sliders[2].value
 
-    cur_col_idx = @lift(recorder.respondent_step_lookup[($respondent, $time_step)])
-    cur_likelihood_ys = @lift(@view recorder.likelihoods[:, $cur_col_idx])
-    cur_raw_likelihood_ys = @lift(@view recorder.raw_likelihoods[:, $cur_col_idx])
-    cur_response_ys = @lift(@view recorder.item_responses[:, $cur_col_idx])
+    cur_col_idx = @lift(recording.respondent_step_lookup[($respondent, $time_step)])
+    cur_likelihood_ys = @lift(@view recording.likelihoods[:, $cur_col_idx])
+    cur_raw_likelihood_ys = @lift(@view recording.raw_likelihoods[:, $cur_col_idx])
+    cur_response_ys = @lift(@view recording.item_responses[:, $cur_col_idx])
     if abilities !== nothing
         cur_ability = @lift(abilities[$respondent])
     end
     function mk_get_correctness(correct)
         function get_correctness(time_step, respondent)
-            difficulty = @view recorder.item_difficulties[1:time_step, respondent]
-            correctness = @view recorder.item_correctness[1:time_step, respondent]
+            difficulty = @view recording.item_difficulties[1:time_step, respondent]
+            correctness = @view recording.item_correctness[1:time_step, respondent]
             difficulty[correctness .== correct]
         end
     end
     cur_prev_correct = lift(mk_get_correctness(true), time_step, respondent)
     cur_prev_incorrect = lift(mk_get_correctness(false), time_step, respondent)
 
-    posterior_likelihood_line = lines!(ax, recorder.xs, cur_likelihood_ys)
-    raw_likelihood_line = lines!(ax, recorder.xs, cur_raw_likelihood_ys)
-    cur_item_response_curve = lines!(ax, recorder.xs, cur_response_ys)
+    posterior_likelihood_line = lines!(ax, recording.xs, cur_likelihood_ys)
+    raw_likelihood_line = lines!(ax, recording.xs, cur_raw_likelihood_ys)
+    cur_item_response_curve = lines!(ax, recording.xs, cur_response_ys)
     correct_items = scatter!(ax, cur_prev_correct, [0.0], color = :green)
     incorrect_items = scatter!(ax, cur_prev_incorrect, [0.0], color = :red)
     if abilities !== nothing

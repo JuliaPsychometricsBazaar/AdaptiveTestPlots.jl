@@ -300,7 +300,9 @@ function plot_item_bank_comparison(
             maybe_title = (;)
         end
         ax = Axis(left_panel[ibi, 1]; maybe_title...)
-        xlims!(ax, lim_lo, lim_hi)
+        if !(lim_lo isa AbstractVector)
+            xlims!(ax, lim_lo, lim_hi)
+        end
         for (ii, item) in enumerate(items)
             item_label = labeller(item)
             item_lines = @view outcomes[ibi, :, ii]

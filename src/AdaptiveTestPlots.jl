@@ -5,7 +5,7 @@ installed.
 """
 module AdaptiveTestPlots
 
-export CatRecorder, ability_evolution_lines, ability_convergence_lines
+export CatRecorder
 export lh_evolution_interactive, @automakie, plot_likelihoods
 export plot_item_bank, plot_item_bank_comparison
 export summary_plot

@@ -1,30 +1,66 @@
-"""
-$(TYPEDSIGNATURES)
-"""
-function ability_evolution_lines(recorder; abilities = nothing)
-    plt = (data((respondent = recorder.respondents,
-               ability_est = recorder.ability_ests,
-               step = recorder.steps)) *
-           visual(Lines) *
-           mapping(:step, :ability_est, color = :respondent => nonnumeric))
-    conv_lines_fig = draw(plt)
-    if abilities !== nothing
-        aog_hlines!(conv_lines_fig, abilities)
+function Makie.convert_arguments(lsv::Type{ViolinSeq}, recorder::CatRecorder, args...; kwargs...)
+    convert_arguments(lsv, recorder.recording)
+end
+
+function Makie.convert_arguments(lsv::Type{ViolinSeq}, recording::CatRecording)
+    matches = []
+    for (name, value) in pairs(recording.data)
+        if value.type == :ability_distribution
+            push!(matches, name)
+        end
     end
-    conv_lines_fig
+    if length(matches) == 0
+        error("No ability likelihoods found in recording")
+    elseif length(matches) > 1
+        error("Multiple ability likelihoods found in recording")
+    end
+    convert_arguments(lsv, recording, matches[1])
+end
+
+function Makie.convert_arguments(lsv::Type{ViolinSeq}, recording::CatRecording, name::Symbol)
+    likelihoods = getproperty(recording.data, name)
+    (
+        1:length(recording.item_index),
+        likelihoods.points,
+        likelihoods.data
+    )
+end
+
+summary_plot(recording::CatRecorder) = summary_plot(recording.recording)
+
+function summary_plot(recording::CatRecording)
+    num_steps = length(recording.item_index)
+    steps = 1:num_steps
+    fig = Figure()
+    fig_row = 1
+    for (name, value) in pairs(recording.data)
+        if value.type == :ability_distribution
+            ax = Axis(fig[fig_row, 1];
+                xlabel = "Step",
+                ylabel = "Ability",
+                xticks = steps,
+                title = value.label
+            )
+            violinseq!(ax, recording, name)
+            fig_row += 1
+        end
+    end
+    return fig
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function ability_convergence_lines(recorder; abilities)
-    plt = (data((respondent = recorder.respondents,
-               ability_div = recorder.ability_divs,
-               step = recorder.steps)) *
+function ability_evolution(recording::CatRecording)
+    # XXX: USE THE DF
+    plt = (data(DF) *
            visual(Lines) *
-           mapping(:step, :ability_div, color = :respondent => nonnumeric))
-    draw(plt)
+           mapping(:step, :ability_est, color = :respondent => nonnumeric))
+    conv_lines_fig = draw(plt)
+    conv_lines_fig
 end
+
+ability_evolution(recorder::CatRecorder) = ability_evolution(recorder.recording)
 
 """
 $(TYPEDSIGNATURES)

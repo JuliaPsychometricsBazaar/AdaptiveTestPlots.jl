@@ -27,13 +27,22 @@ function Makie.convert_arguments(lsv::Type{ViolinSeq}, recording::CatRecording, 
 end
 
 summary_plot(recording::CatRecorder) = summary_plot(recording.recording)
+summary_plot(recorded_loop::RecordedCatLoop) = summary_plot(recorded_loop.recorder)
 
 function summary_plot(recording::CatRecording)
     num_steps = length(recording.item_index)
     steps = 1:num_steps
     fig = Figure()
+    overlays = []
+    for (name, value) in pairs(recording.data)
+        if value.type == :true_ability
+            push!(overlays, (name, value))
+        end
+    end
+
     fig_row = 1
     for (name, value) in pairs(recording.data)
+        ax = nothing
         if value.type == :ability_distribution
             ax = Axis(fig[fig_row, 1];
                 xlabel = "Step",
@@ -43,6 +52,41 @@ function summary_plot(recording::CatRecording)
             )
             violinseq!(ax, recording, name)
             fig_row += 1
+        elseif value.type == :ability
+            ax = Axis(fig[fig_row, 1];
+                xlabel = "Step",
+                ylabel = "Ability",
+                xticks = steps,
+                title = value.label
+            )
+            lines!(ax, steps, value.data)
+            fig_row += 1
+        elseif value.type == :ability_and_stddev
+            ax = Axis(fig[fig_row, 1];
+                xlabel = "Step",
+                ylabel = "Ability",
+                xticks = steps,
+                title = value.label
+            )
+            if hasproperty(value, :include_initial) && value.include_initial
+                cur_steps = [0; steps]
+                values = @view value.data[1, :]
+                errs = @view value.data[2, :]
+            else
+                cur_steps = steps
+                values = @view value.data[1, 2:end]
+                errs = @view value.data[2, 2:end]
+            end
+            scatterlines!(ax, cur_steps, values, color=:black)
+            errorbars!(ax, cur_steps, values, errs, whiskerwidth = 10, color=:black, linestyle=:dash)
+            fig_row += 1
+        else
+            continue
+        end
+        for (name, value) in overlays
+            if ax !== nothing
+                hlines!(ax, value.value, linestyle=:dash, color=:black)
+            end
         end
     end
     return fig

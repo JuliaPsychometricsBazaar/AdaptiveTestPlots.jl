@@ -75,10 +75,11 @@ end
 =#
 
 function plot_item_responses(
-        item_bank;
-        ax = Axis(),
-        items = eachindex(item_bank),
-        zero_symmetric = false
+    item_bank;
+    ax = Axis(),
+    items = eachindex(item_bank),
+    zero_symmetric = false,
+    visibilities = nothing,
 )
     lim_lo, lim_hi = item_bank_domain(
         item_bank;
@@ -91,7 +92,11 @@ function plot_item_responses(
         ir = ItemResponse(item_bank, item)
         item_label = "Item $item"
         item_outcomes = @view outcomes[:, ii]
-        plot_item_response(ir, ax, xs, item_label, item_outcomes)
+        item_visibilities = nothing
+        if visibilities !== nothing
+            item_visibilities = @view visibilities[:, ii]
+        end
+        plot_item_response(ir, ax, xs, item_label, item_outcomes, item_visibilities = item_visibilities)
     end
 
     return outcomes
@@ -124,22 +129,6 @@ function plot_item_bank(item_bank::AbstractItemBank;
     outcome_show_obs_arr = Fill(true, 2)
     item_show_obs_arr = Fill(true, length(items))
 
-    # Left panel
-    left_panel = fig[1, 1] = GridLayout()
-    lim_lo, lim_hi = item_bank_domain(
-        item_bank;
-        items = items,
-        zero_symmetric = zero_symmetric)
-    #ax = Axis(left_panel[1, 1], limits = ((lim_lo, lim_hi), nothing))
-    ax = Axis(left_panel[1, 1])
-    rowsize!(fig.layout, 1, Auto(false))
-    colsize!(fig.layout, 1, Auto(false))
-    outcomes = plot_item_responses(
-        item_bank, ax = ax, items = items, zero_symmetric = zero_symmetric)
-    if include_legend
-        left_panel[2, 1] = Legend(fig, ax, "Legend", framevisible = false)
-    end
-
     # Right panel
     right_panel = fig[1, 2] = GridLayout()
     if include_outcome_toggles
@@ -163,14 +152,33 @@ function plot_item_bank(item_bank::AbstractItemBank;
     end
     trim!(right_panel)
 
-    # Hook up the observables
+    # Make array of observables
+    visibilities = Array{Observable{Bool}}(undef, 2, length(items))
     for (i, outcome) in enumerate(outcome_show_obs_arr)
         for (j, item) in enumerate(item_show_obs_arr)
-            connect!(
-                outcomes[i, j].visible,
-                @lift $(outcome) && ($(item) || $(display_all_obs))
-            )
+            visibilities[i, j] = @lift $(outcome) && ($(item) || $(display_all_obs))
         end
+    end
+
+    # Left panel
+    left_panel = fig[1, 1] = GridLayout()
+    lim_lo, lim_hi = item_bank_domain(
+        item_bank;
+        items = items,
+        zero_symmetric = zero_symmetric)
+    #ax = Axis(left_panel[1, 1], limits = ((lim_lo, lim_hi), nothing))
+    ax = Axis(left_panel[1, 1])
+    rowsize!(fig.layout, 1, Auto(false))
+    colsize!(fig.layout, 1, Auto(false))
+    plot_item_responses(
+        item_bank,
+        ax = ax,
+        items = items,
+        zero_symmetric = zero_symmetric,
+        visibilities = visibilities
+    )
+    if include_legend
+        left_panel[2, 1] = Legend(fig, ax, "Legend", framevisible = false)
     end
     fig
 end
@@ -181,16 +189,22 @@ function plot_item_response(::OneDimContinuousDomain,
         xs,
         item_label,
         outcomes;
-        ys_buf = Array{Float64}(undef, length(xs), 2))
+        ys_buf = Array{Float64}(undef, length(xs), 2),
+        item_visibilities = nothing)
     for (i, x) in enumerate(xs)
         ys_buf[i, :] .= resp_vec(ir, x)
     end
 
     for out in [1, 2]
+        visible = true
+        if item_visibilities !== nothing
+            visible = item_visibilities[out]
+        end
         outcomes[out] = lines!(ax,
             xs,
             (@view ys_buf[:, out]),
-            label = "Item $item_label Outcome $out")
+            label = "Item $item_label Outcome $out",
+            visible = visible)
     end
 end
 
@@ -200,7 +214,8 @@ function plot_item_response(::VectorContinuousDomain,
         xs,
         item_label,
         outcomes;
-        ys_buf = Array{Float64}(undef, length(xs), 2))
+        ys_buf = Array{Float64}(undef, length(xs), 2),
+        item_visibilities = nothing)
     for (i, x) in enumerate(xs)
         ys_buf[i, :] .= resp_vec(ir, x)
     end
@@ -208,6 +223,10 @@ function plot_item_response(::VectorContinuousDomain,
     dim1 = [x[1] for x in xs]
     dim2 = [x[2] for x in xs]
     for out in [1, 2]
+        visible = true
+        if item_visibilities !== nothing
+            visible = item_visibilities[out]
+        end
         outcomes[out] = heatmap!(ax,
             dim1,
             dim2,

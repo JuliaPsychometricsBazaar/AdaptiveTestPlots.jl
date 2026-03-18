@@ -15,8 +15,7 @@ using DocStringExtensions
 using AlgebraOfGraphics
 using DataFrames
 using Makie
-using Makie: @Block, compute_x_and_width, extrema_nan
-using MakieCore: mixin_generic_plot_attributes, automatic
+using Makie: @Block, compute_x_and_width, extrema_nan, mixin_generic_plot_attributes, automatic, add_input!, map!
 using ColorTypes: RGBA
 using DocStringExtensions
 using FittedItemBanks
@@ -24,7 +23,7 @@ using FittedItemBanks: item_params, item_bank_domain, item_ys
 using ComputerAdaptiveTesting: Aggregators
 using ComputerAdaptiveTesting.Aggregators
 using ComputerAdaptiveTesting.Responses: function_ys
-using ComputerAdaptiveTesting.Sim: CatRecorder, CatRecording
+using ComputerAdaptiveTesting.Sim: CatRecorder, CatRecording, RecordedCatLoop
 using PsychometricsBazaarBase.Integrators
 using FillArrays
 

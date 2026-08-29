@@ -7,3 +7,5 @@ end
 @testset "jet" begin
     include("./jet.jl")
 end
+
+include("./likelihoods.jl")

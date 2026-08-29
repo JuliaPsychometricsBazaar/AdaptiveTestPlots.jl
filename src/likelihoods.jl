@@ -99,7 +99,9 @@ function plot_likelihoods(estimators,
         width = 350,
         tellheight = false)
     for (toggle, est_plot) in zip(ltgrid.toggles, est_plots)
-        connect!(est_plot.visible, toggle.active)
+        on(toggle.active; update = true) do active
+            est_plot.visible = active
+        end
     end
     fig
 end

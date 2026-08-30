@@ -20,7 +20,7 @@ end
 
 function draw_outcome_toggles!(ax, outcomes)
     outcome_toggles = []
-    for out in [1, 2]
+    for out in outcomes
         push!(outcome_toggles,
             (off_label = "Show $out", on_label = "Hide $out", active = true))
     end
@@ -86,15 +86,21 @@ function plot_item_responses(
         items = items,
         zero_symmetric = zero_symmetric)
     xs = make_grid(item_bank, lim_lo, lim_hi, 100)
-    outcomes = Array{Union{Makie.Lines, Makie.Heatmap}}(undef, 2, length(items))
+    num_outcomes = maximum(
+        num_response_categories(ItemResponse(item_bank, item)) for item in items;
+        init = 0,
+    )
+    outcomes = Matrix{Union{Nothing, Makie.Lines, Makie.Heatmap}}(
+        nothing, num_outcomes, length(items))
 
     for (ii, item) in enumerate(items)
         ir = ItemResponse(item_bank, item)
         item_label = "Item $item"
-        item_outcomes = @view outcomes[:, ii]
+        item_num_outcomes = num_response_categories(ir)
+        item_outcomes = @view outcomes[1:item_num_outcomes, ii]
         item_visibilities = nothing
         if visibilities !== nothing
-            item_visibilities = @view visibilities[:, ii]
+            item_visibilities = @view visibilities[1:item_num_outcomes, ii]
         end
         plot_item_response(ir, ax, xs, item_label, item_outcomes, item_visibilities = item_visibilities)
     end
@@ -126,13 +132,17 @@ function plot_item_bank(item_bank::AbstractItemBank;
         include_legend = true)
     # Default value of observables
     display_all_obs = false
-    outcome_show_obs_arr = Fill(true, 2)
+    num_outcomes = maximum(
+        num_response_categories(ItemResponse(item_bank, item)) for item in items;
+        init = 0,
+    )
+    outcome_show_obs_arr = Fill(true, num_outcomes)
     item_show_obs_arr = Fill(true, length(items))
 
     # Right panel
     right_panel = fig[1, 2] = GridLayout()
     if include_outcome_toggles
-        outcome_grid = draw_outcome_toggles!(right_panel[1, 1], [1, 2])
+        outcome_grid = draw_outcome_toggles!(right_panel[1, 1], 1:num_outcomes)
         outcome_show_obs_arr = [toggle.active for toggle in outcome_grid.toggles]
     end
     item_grid = nothing
@@ -153,7 +163,7 @@ function plot_item_bank(item_bank::AbstractItemBank;
     trim!(right_panel)
 
     # Make array of observables
-    visibilities = Array{Observable{Bool}}(undef, 2, length(items))
+    visibilities = Array{Observable{Bool}}(undef, num_outcomes, length(items))
     for (i, outcome) in enumerate(outcome_show_obs_arr)
         for (j, item) in enumerate(item_show_obs_arr)
             visibilities[i, j] = @lift $(outcome) && ($(item) || $(display_all_obs))
@@ -189,13 +199,13 @@ function plot_item_response(::OneDimContinuousDomain,
         xs,
         item_label,
         outcomes;
-        ys_buf = Array{Float64}(undef, length(xs), 2),
+        ys_buf = Array{Float64}(undef, length(xs), length(outcomes)),
         item_visibilities = nothing)
     for (i, x) in enumerate(xs)
         ys_buf[i, :] .= resp_vec(ir, x)
     end
 
-    for out in [1, 2]
+    for out in eachindex(outcomes)
         visible = true
         if item_visibilities !== nothing
             visible = item_visibilities[out]
@@ -214,7 +224,7 @@ function plot_item_response(::VectorContinuousDomain,
         xs,
         item_label,
         outcomes;
-        ys_buf = Array{Float64}(undef, length(xs), 2),
+        ys_buf = Array{Float64}(undef, length(xs), length(outcomes)),
         item_visibilities = nothing)
     for (i, x) in enumerate(xs)
         ys_buf[i, :] .= resp_vec(ir, x)
@@ -222,7 +232,7 @@ function plot_item_response(::VectorContinuousDomain,
 
     dim1 = [x[1] for x in xs]
     dim2 = [x[2] for x in xs]
-    for out in [1, 2]
+    for out in eachindex(outcomes)
         visible = true
         if item_visibilities !== nothing
             visible = item_visibilities[out]

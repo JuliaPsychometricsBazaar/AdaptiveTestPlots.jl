@@ -10,6 +10,17 @@ function index_labeller(index::Int)
     "Item $index"
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Return `x` as an `Observable`, wrapping it if it is not one already.
+
+`lift` (which is `Observables.map`) only dispatches on an observable first
+argument; a plain value in that position falls back to `Base.map` and fails.
+"""
+as_observable(x::Observable) = x
+as_observable(x) = Observable(x)
+
 function toggle_grid_observables(grid, len; default = true)
     if grid === nothing
         fill(Observable(default), len)
@@ -166,7 +177,11 @@ function plot_item_bank(item_bank::AbstractItemBank;
     visibilities = Array{Observable{Bool}}(undef, num_outcomes, length(items))
     for (i, outcome) in enumerate(outcome_show_obs_arr)
         for (j, item) in enumerate(item_show_obs_arr)
-            visibilities[i, j] = @lift $(outcome) && ($(item) || $(display_all_obs))
+            visibilities[i, j] = lift(
+                (outcome_val, item_val, all_val) -> outcome_val && (item_val || all_val),
+                as_observable(outcome),
+                item,
+                display_all_obs)
         end
     end
 

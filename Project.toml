@@ -1,7 +1,7 @@
 name = "AdaptiveTestPlots"
 uuid = "d194c7c1-4081-4169-ba52-101f65b44e42"
-authors = ["Frankie Robertson"]
 version = "0.1.8"
+authors = ["Frankie Robertson"]
 
 [deps]
 AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
@@ -18,7 +18,7 @@ PsychometricsBazaarBase = "b0d9cada-d963-45e9-a4c6-4746243987f1"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
-AlgebraOfGraphics = "^0.11"
+AlgebraOfGraphics = "^0.13"
 Aqua = "^0.8.11"
 ColorTypes = "0.12.1"
 ComputerAdaptiveTesting = "^0.4.1"

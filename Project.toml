@@ -1,6 +1,6 @@
 name = "AdaptiveTestPlots"
 uuid = "d194c7c1-4081-4169-ba52-101f65b44e42"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Frankie Robertson"]
 
 [deps]

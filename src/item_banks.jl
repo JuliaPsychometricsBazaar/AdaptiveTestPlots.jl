@@ -160,7 +160,7 @@ function plot_item_bank(item_bank::AbstractItemBank;
 
     if item_selection == :toggles
         item_grid = draw_item_toggles!(right_panel[2, 1], items, labeller)
-        item_show_obs_arr = [toggle.active for toggle in grid.toggles]
+        item_show_obs_arr = [toggle.active for toggle in item_grid.toggles]
     elseif item_selection in (:menu, :menu_with_all)
         if item_selection == :menu_with_all
             display_all_panel = right_panel[3, 1] = GridLayout()
@@ -169,7 +169,7 @@ function plot_item_bank(item_bank::AbstractItemBank;
             Label(display_all_panel[1, 1], "Show all items")
         end
         menu = Menu(right_panel[2, 1], options = items, width = 100)
-        item_show_obs_arr[i] = [@lift $(menu.selection) == item for item in items]
+        item_show_obs_arr = [@lift $(menu.selection) == item for item in items]
     end
     trim!(right_panel)
 
